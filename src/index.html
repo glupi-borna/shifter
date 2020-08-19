@@ -1,0 +1,37 @@
+<head>
+	<script type="module" src="main.js"></script>
+</head>
+
+<body>
+	<input id="fileInput" type="file" />
+
+	<div class="canvas-wrapper">
+		<div class="canvas-buttons">
+			<button onclick="fileInput.click()">Load</button>
+			<button id="inputButton">Play</button>
+		</div>
+		<canvas id="inputCanvas"></canvas>
+	</div>
+
+	<div id="pipelineTools">
+		<select id="filterSelectElement"></select>
+		<button id="pipelineAddButton">+</button>
+	</div>
+
+	<div id="pipelineContainer">
+	</div>
+
+	<div class="canvas-wrapper">
+		<div class="canvas-buttons">
+			<button>Save</button>
+			<button id="outputButton">Play</button>
+		</div>
+		<canvas id="outputCanvas"></canvas>
+	</div>
+
+	<label id="promptWrapper" class="prompt-wrapper">
+		<div id="promptPrefix" class="prompt-prefix"></div>
+		<input id="promptTextbox" />
+		<div id="promptSuffix" class="prompt-suffix"></div>
+	</label>
+</body>

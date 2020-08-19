@@ -1,0 +1,14 @@
+{
+	"folders":
+	[
+		{
+			"path": "."
+		}
+	],
+	"build_systems": [
+		{
+            "name": "nwjs",
+            "shell_cmd": "cd $project_path; nwjs-sdk/nw ."
+		}
+	]
+}

@@ -1,0 +1,11 @@
+{
+	"name": "shifter",
+	"main": "src/index.html",
+	"dependencies": {
+		"audio-loader": "^1.0.3",
+		"fft.js": "^4.0.3"
+	},
+	"devDependencies": {
+		"@types/node": "^14.0.27"
+	}
+}
