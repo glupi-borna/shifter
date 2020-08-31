@@ -2,8 +2,7 @@
 	"name": "shifter",
 	"main": "src/index.html",
 	"dependencies": {
-		"audio-loader": "^1.0.3",
-		"fft.js": "^4.0.3"
+		"node-wav": "0.0.2"
 	},
 	"devDependencies": {
 		"@types/node": "^14.0.27"

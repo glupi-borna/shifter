@@ -9,6 +9,11 @@ html, body {
   user-select: none;
   --bg: #113355;
   --fg: #f5f5f2;
+  --blue: #2af;
+  --red: #f55;
+  --yellow: #ff5;
+  --orange: #fa5;
+  --green: #0c5;
   background: var(--bg);
   color: var(--fg);
   font-family: sans-serif;
@@ -27,32 +32,54 @@ canvas {
   outline: none;
 }
 
+select, input, textarea {
+  background: #0004;
+  color: var(--fg);
+  box-shadow: -2px -2px 4px -3px #fff4 inset, 2px 2px 4px -1px #0004 inset;
+  border: none;
+  border-radius: 4px;
+  padding: 2px;
+}
+
+option {
+  color: var(--fg);
+  background: var(--bg);
+}
+
 input[type=file] {
   display: none;
 }
 
 input[type=checkbox] {
+  --color: var(--green);
   appearance: none;
   width: 1em;
   height: 1em;
   box-shadow: -2px -2px 4px -3px #fff4 inset, 2px 2px 4px -1px #0004 inset;
   border-radius: 4px;
 }
+input[type=checkbox].channel-nub {
+  --color: var(--blue);
+  width: 0;
+  height: 0;
+  padding: 5px;
+  margin: 0px 0px 1px 1px;
+}
 
 input[type=checkbox]:checked {
-  background: green;
-  box-shadow: -2px -2px 4px -1px #fff4, 2px 2px 4px -1px #0004, 0px 0px 8px #0f04;
+  background: var(--color);
+  box-shadow: -2px -2px 4px -1px #fff4, 2px 2px 4px -1px #0004, 0px 0px 8px var(--color);
 }
 
 button {
   border: 0px solid transparent;
   border-radius: 4px;
-  background: transparent;
   padding: 2px 4px;
   margin: 2px 2px;
   min-width: 1em;
   min-height: 1em;
-  background: transparent;
+  background: #0002;
+  backdrop-filter: blur(4px);
   color: inherit;
   box-shadow: -2px -2px 4px -1px #fff8, 2px 2px 4px -1px #0008;
 }
@@ -108,22 +135,22 @@ button:active {
 }
 
 .red {
-  background: #ff5555;
+  background: var(--red);
   color: white;
 }
 
 .yellow {
-  background: #ffff55;
+  background: var(--yellow);
   color: black;
 }
 
 .orange {
-  background: #ffaa55;
+  background: var(--orange);
   color: black;
 }
 
 .blue {
-  background: #2af;
+  background: var(--blue);
   color: black;
 }
 
@@ -225,15 +252,13 @@ body[draggroup=filters] #pipelineContainer .drop-after, body[draggroup=filters] 
   transition: opacity 0.1s;
 }
 
-.canvas-wrapper:hover .canvas-buttons {
+.canvas-wrapper:hover .canvas-buttons, .canvas-wrapper:hover .sound-data {
   opacity: 1;
 }
 
 shifter-knob {
   --rotation: 0deg;
   --size: 32px;
-  --value: "";
-  --unit: "";
   --perc: 0%;
   --color: white;
   flex: 0 0 auto;
@@ -285,7 +310,6 @@ shifter-knob .shifter-nub {
   width: 100%;
   height: 2px;
   transform: translate(-50%, -50%) rotate(var(--rotation));
-  transition: transform 0.1s;
   z-index: 2;
 }
 shifter-knob .shifter-nub::after {
@@ -303,23 +327,33 @@ shifter-knob:hover .shifter-nub::after, shifter-knob:active .shifter-nub::after,
   background: var(--color);
   box-shadow: -2px -2px 4px -3px #fff inset, 2px 2px 4px -1px #000 inset, 0 0 8px var(--color);
 }
-shifter-knob::before {
-  content: "";
-  background: transparent;
-  color: transparent;
-  pointer-events: none;
-  transition: background 0.1s, color 0.1s;
-  z-index: 3;
+
+.anchored-popover {
+  position: fixed;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  z-index: 100;
 }
-shifter-knob:active::before, shifter-knob:hover::before {
-  display: block;
-  content: var(--value, "") var(--unit, "");
+
+.rect {
+  background: var(--bg);
+  color: var(--fg);
+  padding: 4px;
+}
+
+.hint::after {
+  content: var(--hint, "");
+}
+
+.sound-data {
   position: absolute;
-  left: 0;
-  top: 100%;
-  background: #0008;
-  color: white;
-  padding: 1px 2px;
+  bottom: 0;
+  right: 0;
+  padding: 2px 4px;
+  background: var(--bg);
+  border-radius: 2px;
+  opacity: 0.25;
+  transition: opacity 0.1s;
 }
 
 /*# sourceMappingURL=style.css.map */
