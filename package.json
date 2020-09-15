@@ -1,5 +1,6 @@
 {
 	"name": "shifter",
+    "version": "1.0.0",
 	"main": "src/index.html",
 	"dependencies": {
 		"node-wav": "0.0.2"

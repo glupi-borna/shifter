@@ -12,35 +12,9 @@ import "./audio.js";
 
 globalize(Math);
 
-const audio_context = new AudioContext();
 
-watch_stylesheet(pwd + "/style.scss", "mainStyle");
-
-window.input = {
-	canvas: null,
-	amp_canvas: null,
-	fft_canvas: null,
-	line_canvas: null,
-	buffer: null,
-	source: null,
-	button: null,
-	is_playing: false,
-	context: audio_context,
-	data_element: null
-};
-
-window.output = {
-	canvas: null,
-	amp_canvas: null,
-	fft_canvas: null,
-	line_canvas: null,
-	buffer: null,
-	source: null,
-	button: null,
-	is_playing: false,
-	context: audio_context,
-	data_element: null
-};
+if (process.versions["nw-flavor"] === "sdk")
+	watch_stylesheet(pwd + "/style.scss", "mainStyle");
 
 window.shift_down = false;
 window.alt_down = false;
@@ -60,48 +34,25 @@ window.onkeyup = (/** @type {KeyboardEvent} */ ev) => {
 
 window.onkeypress = (/** @type {KeyboardEvent} */ ev) => {
 	if (ev.key === "i") {
-		play_audio(input);
+		audio_play(input);
 	} else if (ev.key === "o") {
-		play_audio(output);
+		audio_play(output);
 	}
 }
 
-
-window.update_data = function update_data(audio) {
-	if (!audio.buffer) {
-		audio.data_element.remove_children();
-		return;
-	}
-
-	let seconds = audio.buffer.length / audio.buffer.sampleRate;
-	let seconds_post = "seconds";
-
-	if (Math.abs(seconds) === 1) {
-		seconds_post = "second";
-	}
-
-	let channels_post = "channels";
-	if (audio.buffer.numberOfChannels === 1) {
-		channels_post = "channel";
-	}
-
-	audio.data_element.remove_children().append(
-		text(`${seconds.toFixed(2)} ${seconds_post} | ${audio.buffer.sampleRate} Hz | ${audio.buffer.length} samples | ${audio.buffer.numberOfChannels} ${channels_post}`)
-	);
-}
 
 window.onload = () => {
 	fileInput.on('input', () => {
-		open_audio_file(fileInput, input.context)
+		audio_open_file(fileInput, input.context)
 		.then(audio => {
 			input.buffer = audio;
-			set_source(input);
-			update_data(input);
+			audio_set_source(input);
+			audio_update_data(input);
 			render_audio(input);
-			if (pipeline.length > 0) {
-				invalidate_filter_cache(pipeline[0]);
+			if (filter_pipeline.length > 0) {
+				filter_invalidate_cache(filter_pipeline[0]);
 			}
-			apply_pipeline();
+			filter_apply_pipeline();
 		});
 	});
 
@@ -117,7 +68,7 @@ window.onload = () => {
 							path += res;
 						}
 
-						fs.writeFileSync(path, encode_wav(output));
+						fs.writeFileSync(path, audio_encode_wav(output));
 					} catch (e) {
 						console.log("Failed to write file!", e);
 					}
@@ -132,24 +83,50 @@ window.onload = () => {
 		}
 	});
 
-	input.canvas = inputCanvas;
-	input.fft_canvas  = new OffscreenCanvas(0, 0);
-	input.amp_canvas  = new OffscreenCanvas(0, 0);
-	input.line_canvas  = new OffscreenCanvas(0, 0);
+	audio_init_canvas(input, inputCanvas);
 	input.button  = inputButton;
-	input.button.onclick = play_audio.bind(input.button, input);
+	input.button.onclick = audio_play.bind(input.button, input);
 	input.data_element = inputData;
 
-	output.canvas = outputCanvas;
-	output.fft_canvas = new OffscreenCanvas(0, 0);
-	output.amp_canvas = new OffscreenCanvas(0, 0);
-	output.line_canvas = new OffscreenCanvas(0, 0);
+	inputFFTButton
+	.append(text("𝘧"))
+	.on("click", () => {
+		input.render_fft = !input.render_fft;
+		inputFFTButton.classList.toggle("red", !input.render_fft);
+		render_audio(input);
+	});
+
+	inputAMPButton
+	.append(text("∿"))
+	.on("click", () => {
+		input.render_amp = !input.render_amp;
+		inputAMPButton.classList.toggle("red", !input.render_amp);
+		render_audio(input);
+	});
+
+	outputFFTButton
+	.append(text("𝘧"))
+	.on("click", () => {
+		output.render_fft = !output.render_fft;
+		outputFFTButton.classList.toggle("red", !output.render_fft);
+		render_audio(output);
+	});
+
+	outputAMPButton
+	.append(text("∿"))
+	.on("click", () => {
+		output.render_amp = !output.render_amp;
+		outputAMPButton.classList.toggle("red", !output.render_amp);
+		render_audio(output);
+	});
+
+	audio_init_canvas(output, outputCanvas);
 	output.data_element = outputData;
 
 	render_all();
 
 	output.button = outputButton;
-	output.button.onclick = play_audio.bind(output.button, output);
+	output.button.onclick = audio_play.bind(output.button, output);
 
 	pipelineContainer.append(
 		el('div').set_class('drop-before', 'yellow', 'dent')
@@ -157,14 +134,14 @@ window.onload = () => {
 			let container_id = ev.dataTransfer.getData("text/container_id")
 			let container = document.getElementById(container_id);
 			let filter = container.store.filter;
-			let ind = pipeline.indexOf(filter);
+			let ind = filter_pipeline.indexOf(filter);
 
-			pipeline.splice(ind, 1);
-			pipeline.unshift(filter);
+			filter_pipeline.splice(ind, 1);
+			filter_pipeline.unshift(filter);
 
 			pipelineContainer.firstElementChild.append_after(container);
-			invalidate_filter_cache(filter);
-			apply_pipeline();
+			filter_invalidate_cache(filter);
+			filter_apply_pipeline();
 		}),
 
 		el('div').set_class('drop-before', 'yellow', 'dent')
@@ -172,14 +149,14 @@ window.onload = () => {
 			let container_id = ev.dataTransfer.getData("text/container_id")
 			let container = document.getElementById(container_id);
 			let filter = container.store.filter;
-			let ind = pipeline.indexOf(filter);
+			let ind = filter_pipeline.indexOf(filter);
 
-			pipeline.splice(ind, 1);
-			pipeline.push(filter);
+			filter_pipeline.splice(ind, 1);
+			filter_pipeline.push(filter);
 
 			pipelineContainer.lastElementChild.append_before(container);
-			invalidate_filter_cache(filter);
-			apply_pipeline();
+			filter_invalidate_cache(filter);
+			filter_apply_pipeline();
 		})
 	);
 
@@ -203,11 +180,11 @@ window.onload = () => {
 			filter.channels = 2;
 		}
 
-		pipeline.push(filter);
+		filter_pipeline.push(filter);
 		pipelineContainer.lastElementChild.append_before(
 			filter_container(filter, filterSelectElement.value)
 		);
-		apply_pipeline();
+		filter_apply_pipeline();
 	};
 
 	filterSelectElement.set_options(filters)
@@ -216,7 +193,7 @@ window.onload = () => {
 			add_filter();
 			ev.preventDefault();
 		}
-	}).on("prompt_changed", (ev) => {
+	}).on("prompt_changed", (_) => {
 		add_filter();
 	});
 

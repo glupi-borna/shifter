@@ -1,3 +1,4 @@
 /nwjs-sdk
 /node_modules
 *.sublime-workspace
+/build

@@ -89,6 +89,12 @@ button:hover, button:focus {
 button:active {
   box-shadow: -2px -2px 4px -3px #fff8 inset, 2px 2px 4px -1px #0008 inset;
 }
+button.render-button {
+  width: 24px;
+  height: 24px;
+  font-size: 20px;
+  text-align: center;
+}
 
 .prompt-wrapper {
   display: none;
@@ -242,17 +248,28 @@ body[draggroup=filters] #pipelineContainer .drop-after, body[draggroup=filters] 
   position: relative;
 }
 
-.canvas-buttons {
+.canvas-buttons-left {
   position: absolute;
   left: 0;
   top: 0;
-  right: 0;
+  right: 50%;
   bottom: 0;
   opacity: 0.1;
   transition: opacity 0.1s;
 }
 
-.canvas-wrapper:hover .canvas-buttons, .canvas-wrapper:hover .sound-data {
+.canvas-buttons-right {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.1;
+  transition: opacity 0.1s;
+  text-align: right;
+}
+
+.canvas-wrapper:hover .canvas-buttons-left, .canvas-wrapper:hover .canvas-buttons-right, .canvas-wrapper:hover .sound-data {
   opacity: 1;
 }
 

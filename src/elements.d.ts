@@ -4,9 +4,14 @@ declare var fileSave: HTMLButtonElement;
 
 declare var inputCanvas: HTMLCanvasElement;
 declare var inputButton: HTMLButtonElement;
+declare var inputAMPButton: HTMLButtonElement;
+declare var inputFFTButton: HTMLButtonElement;
 declare var inputData: HTMLDivElement;
+
 declare var outputCanvas: HTMLCanvasElement;
 declare var outputButton: HTMLButtonElement;
+declare var outputAMPButton: HTMLButtonElement;
+declare var outputFFTButton: HTMLButtonElement;
 declare var outputData: HTMLDivElement;
 
 declare var pipelineContainer: HTMLDivElement;

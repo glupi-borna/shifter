@@ -14,15 +14,8 @@ declare var mouse_move_y: Signal<number>;
 declare var shift_down: boolean;
 declare var ctrl_down: boolean;
 declare var alt_down: boolean;
-declare var input: Audio;
-declare var output: Audio;
-
-declare var open_audio_file: (input_el: HTMLInputElement, context: AudioContext) => Promise<AudioBuffer>;
-
 
 declare var shallow_copy: <T>(obj: T) => T;
-declare var copy_audio_buffer: (audio_buffer: AudioBuffer) => AudioBuffer;
-declare var copy_audio_buffer_with_channels: (buffer: AudioBuffer, channels: Float32Array[]) => AudioBuffer;
 
 declare var unwrap: (obj: any) => any;
 declare var globalize: (obj: any) => void;
@@ -31,7 +24,6 @@ declare var watch_stylesheet: (full_path: string, id: string) => void;
 declare var array_get: <T>(arr: ArrayLike<T>, index: number) => T;
 declare var _cur_id: number;
 declare var inc_id: () => number;
-declare var update_data: (audio: Audio) => void;
 declare var prettify_number: (num: number, places?: number) => string;
 
 

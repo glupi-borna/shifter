@@ -20,11 +20,20 @@ window.churn_curve = function churn_curve(formula) {
 	return eval(`function y(x, t, p, freq, period, ind, len, invlen, buf, ch, chind, chnum) {return ${formula}}; y`);
 }
 
-window.pipeline = [];
-
 const shapes = {
 	"Sine": (rad, phase) => Math.sin(rad + phase),
-	"Triangle": (x, phase) => -(((x + phase) % (Math.PI * 2)) / (Math.PI * 2) * 2 - 1),
+	"Saw": function (x, phase) {
+		let base = (x + phase + Math.PI);
+		let repeating = base % (Math.PI * 2);
+		let saw = repeating / Math.PI - 1;
+		return saw;
+	},
+	"Triangle": function (x, phase) {
+		let base = (x + phase + Math.PI / 2);
+		let repeating = base % (Math.PI * 2);
+		let normalized = Math.abs(repeating / Math.PI - 1);
+		return 1 - 2 * normalized;
+	},
 	"Square": (x, phase) => ((x + phase) % (Math.PI * 2)) > Math.PI ? -1 : 1
 };
 
@@ -59,6 +68,8 @@ const curves = {
 	"Elastic ease-out": curve("x === 0 ? 0 : x === 1 ? 1 : pow(2, -10 * x) * sin((x * 10 - 0.75) * 2 * PI / 3) + 1"),
 	"Elastic ease-in-out": curve("x === 0  ? 0  : x === 1  ? 1  : x < 0.5  ? -(pow(2, 20 * x - 10) * sin((20 * x - 11.125) * (2 * PI) / 4.5)) / 2  : (pow(2, -20 * x + 10) * sin((20 * x - 11.125) * (2 * PI) / 4.5)) / 2 + 1")
 };
+
+window.filter_pipeline = [];
 
 window.filter_container = function filter_container(filter, filter_name) {
 	/** @type {HTMLDivElement} */
@@ -95,25 +106,25 @@ window.filter_container = function filter_container(filter, filter_name) {
 			let other_filter = other_container.store.filter;
 
 			if (other_container.nextElementSibling === container || other_container === container.nextElementSibling) {
-				let ind_1 = pipeline.indexOf(filter);
-				let ind_2 = pipeline.indexOf(other_filter);
+				let ind_1 = filter_pipeline.indexOf(filter);
+				let ind_2 = filter_pipeline.indexOf(other_filter);
 
-				[pipeline[ind_1], pipeline[ind_2]] = [pipeline[ind_2], pipeline[ind_1]];
+				[filter_pipeline[ind_1], filter_pipeline[ind_2]] = [filter_pipeline[ind_2], filter_pipeline[ind_1]];
 				swap_elements(container, other_container);
 				return;
 			} else {
-				let other_ind = pipeline.indexOf(other_filter);
+				let other_ind = filter_pipeline.indexOf(other_filter);
 
-				pipeline.splice(other_ind, 1);
+				filter_pipeline.splice(other_ind, 1);
 
-				let ind = pipeline.indexOf(container.store.filter);
-				pipeline.splice(ind, 0, other_filter);
+				let ind = filter_pipeline.indexOf(container.store.filter);
+				filter_pipeline.splice(ind, 0, other_filter);
 
 				container.append_before(other_container);
 			}
 
-			invalidate_filter_cache(other_filter);
-			apply_pipeline();
+			filter_invalidate_cache(other_filter);
+			filter_apply_pipeline();
 		})
 		.append(
 			el('div')
@@ -128,8 +139,8 @@ window.filter_container = function filter_container(filter, filter_name) {
 				.on('input', () => {
 					filter.enabled = !filter.enabled;
 					container.classList.toggle('disabled', !filter.enabled);
-					invalidate_filter_cache(filter);
-					apply_pipeline();
+					filter_invalidate_cache(filter);
+					filter_apply_pipeline();
 				}),
 
 				text(filter_name),
@@ -147,8 +158,8 @@ window.filter_container = function filter_container(filter, filter_name) {
 				})()})
 				.on('input', () => {
 					filter.mix_factor = mix_knob_el.value;
-					invalidate_filter_cache(filter);
-					apply_pipeline();
+					filter_invalidate_cache(filter);
+					filter_apply_pipeline();
 				}),
 
 				fft_q_el = filter.type === "fft" ? (
@@ -156,8 +167,8 @@ window.filter_container = function filter_container(filter, filter_name) {
 					.set_props({label: "FFT", integer: true})
 					.on('input', () => {
 						filter.fft_power = fft_q_el.value;
-						invalidate_filter_cache(filter);
-						apply_pipeline();
+						filter_invalidate_cache(filter);
+						filter_apply_pipeline();
 					})
 				) : null,
 
@@ -212,13 +223,13 @@ window.filter_container = function filter_container(filter, filter_name) {
 
 										filter.target_channels[row + col * 3] = !val;
 
-										invalidate_filter_cache(filter);
-										apply_pipeline();
+										filter_invalidate_cache(filter);
+										filter_apply_pipeline();
 									}).
 									on("click", _ => {
 										filter.target_channels[row + col * 3] = !filter.target_channels[row + col * 3];
-										invalidate_filter_cache(filter);
-										apply_pipeline();
+										filter_invalidate_cache(filter);
+										filter_apply_pipeline();
 									})
 								})
 							)
@@ -232,15 +243,15 @@ window.filter_container = function filter_container(filter, filter_name) {
 					.set_props({label: "T"})
 					.on('input', () => {
 						filter.duration = gen_len_el.value;
-						invalidate_filter_cache(filter);
-						apply_pipeline();
+						filter_invalidate_cache(filter);
+						filter_apply_pipeline();
 					}),
 					gen_ch_el = knob(filter.channels, 16, 1, 6, '')
 					.set_props({label: "CH", integer: true})
 					.on('input', () => {
 						filter.channels = gen_ch_el.value;
-						invalidate_filter_cache(filter);
-						apply_pipeline();
+						filter_invalidate_cache(filter);
+						filter_apply_pipeline();
 					})
 				]),
 
@@ -250,12 +261,12 @@ window.filter_container = function filter_container(filter, filter_name) {
 
 				button('', () => {
 					container.remove();
-					let ind = pipeline.indexOf(filter);
+					let ind = filter_pipeline.indexOf(filter);
 					if (ind != -1) {
 						filter.cache_invalidated.end();
-						invalidate_filter_cache(filter);
-						pipeline.splice(ind, 1);
-						apply_pipeline();
+						filter_invalidate_cache(filter);
+						filter_pipeline.splice(ind, 1);
+						filter_apply_pipeline();
 					}
 				}).set_class('red', 'round')
 			),
@@ -269,35 +280,12 @@ window.filter_container = function filter_container(filter, filter_name) {
 	);
 }
 
-window.create_filter = function(filter) {
+window.filter_create = function(filter) {
 	return filter;
 }
 
 window.filters = {
-	// "Passthrough": create_filter({
-	// 	type: 'buffer',
-	// 	fn: copy_audio_buffer,
-	// 	display: () => {
-	// 		let text = document.createTextNode("Passthrough...");
-	// 		let div = document.createElement("div");
-	// 		div.appendChild(text);
-	// 		return div;
-	// 	}
-	// }),
-	// "Passthrough FFT": create_filter({
-	// 	type: 'fft',
-	// 	fft_power: 9,
-	// 	fn: (fft) => {
-	// 		return fft;
-	// 	},
-	// 	display: () => {
-	// 		let text = document.createTextNode("Passthrough FFT...");
-	// 		let div = document.createElement("div");
-	// 		div.appendChild(text);
-	// 		return div;
-	// 	}
-	// }),
-	"Silence": create_filter({
+	"Silence": filter_create({
 		type: "generator",
 		fn: () => {
 			return 0;
@@ -312,7 +300,7 @@ window.filters = {
 			});
 		}
 	}),
-	"Multiply": create_filter({
+	"Multiply": filter_create({
 		type: 'sample',
 		fn: (sample, settings) => {
 			return sample.volume * settings.factor;
@@ -336,7 +324,7 @@ window.filters = {
 			);
 		}
 	}),
-	"Hi pass": create_filter({
+	"Hi pass": filter_create({
 		type: 'fft',
 		fft_power: 9,
 		before_processing: function (settings) {
@@ -391,7 +379,7 @@ window.filters = {
 		}
 	}),
 
-	"Sweeper": create_filter({
+	"Sweeper": filter_create({
 		type: 'sample',
 		settings: {
 			start_freq: 440,
@@ -467,7 +455,7 @@ window.filters = {
 				row(
 					filter_bind(
 						filter, 'start_freq',
-						knob(filter.settings.start_freq, 32, 0.01, 22000, 'hz', true)
+						knob(filter.settings.start_freq, 32, 0.01, 22050, 'hz', true)
 						.set_props({"label": "F1"})
 					),
 
@@ -506,7 +494,7 @@ window.filters = {
 				row(
 					filter_bind(
 						filter, 'end_freq',
-						knob(filter.settings.end_freq, 32, 0.01, 22000, 'hz', true)
+						knob(filter.settings.end_freq, 32, 0.01, 22050, 'hz', true)
 						.set_props({"label": "F1"})
 					),
 
@@ -588,7 +576,7 @@ window.filters = {
 
 	}),
 
-	"Churn": create_filter({
+	"Churn": filter_create({
 		type: 'sample',
 
 		settings: {
@@ -650,7 +638,7 @@ window.filters = {
 
 	}),
 
-	"Crescendo": create_filter({
+	"Crescendo": filter_create({
 		type: 'sample',
 		settings: {
 			start_volume: 1,
@@ -698,7 +686,7 @@ window.filters = {
 
 	}),
 
-	"Low pass": create_filter({
+	"Low pass": filter_create({
 		type: 'fft',
 		fft_power: 9,
 		fn: (fft, fft_res, settings) => {
@@ -745,7 +733,7 @@ window.fft_freq = function (fft_index, fft_resolution) {
 	return ((fft_index / 2) | 0) * fft_resolution;
 }
 
-window.filter_cache_string = function (filter) {
+window.filter_get_cache_string = function (filter) {
 	let cache_object = shallow_copy(filter);
 	cache_object.cache_buffer = null;
 	cache_object.cache_string = null;
@@ -754,15 +742,15 @@ window.filter_cache_string = function (filter) {
 	return JSON.stringify(cache_object);
 }
 
-window.update_filter_cache = function(filter, buffer) {
-	filter.cache_string = filter_cache_string(filter);
+window.filter_update_cache = function(filter, buffer) {
+	filter.cache_string = filter_get_cache_string(filter);
 	filter.cache_buffer = buffer;
 	return buffer;
 }
 
-window.invalidate_filter_cache = function(inv_filter) {
+window.filter_invalidate_cache = function(inv_filter) {
 	let passed = false;
-	for (let filter of pipeline) {
+	for (let filter of filter_pipeline) {
 		if (filter === inv_filter) {
 			passed = true;
 		}
@@ -780,7 +768,7 @@ window.invalidate_filter_cache = function(inv_filter) {
 @arg {SampleFilter<any>} filter
 @arg {JobData} job_data
 */
-function* run_sample_filter(input_buffer, filter, job_data) {
+function* filter_run_sample(input_buffer, filter, job_data) {
 	const settings = filter.settings;
 	const mix_factor = filter.mix_factor;
 
@@ -864,7 +852,7 @@ function* run_sample_filter(input_buffer, filter, job_data) {
 		out_f32_channels.push(new Float32Array(ch));
 	}
 
-	return copy_audio_buffer_with_channels(input_buffer, out_f32_channels);
+	return audio_buffer_copy_with_channels(input_buffer, out_f32_channels);
 }
 
 /**
@@ -872,7 +860,7 @@ function* run_sample_filter(input_buffer, filter, job_data) {
 @arg {FFTFilter<any>} filter
 @arg {JobData} job_data
 */
-function* run_fft_filter(input_buffer, filter, job_data) {
+function* filter_run_fft(input_buffer, filter, job_data) {
 	const settings = filter.settings;
 	const mix_factor = filter.mix_factor;
 	const inv_mix_factor = 1 - mix_factor;
@@ -933,26 +921,26 @@ function* run_fft_filter(input_buffer, filter, job_data) {
 		out_channels.push(out_channel);
 	}
 
-	return copy_audio_buffer_with_channels(input_buffer, out_channels);
+	return audio_buffer_copy_with_channels(input_buffer, out_channels);
 }
 
 
 /**
 @arg {AudioBuffer} input_buffer
 @arg {BufferFilter<any>} filter
-@arg {JobData} job_data
+@arg {JobData} _
 */
-function* run_buffer_filter(input_buffer, filter, job_data) {
+function* filter_run_buffer(input_buffer, filter, _) {
 	// @TODO: Maybe make buffer filter functions be generators?
 	return filter.fn(input_buffer, filter);
 }
 
 /**
-@arg {AudioBuffer} input_buffer
+@arg {AudioBuffer} _
 @arg {GeneratorFilter<any>} filter
 @arg {JobData} job_data
 */
-function* run_generator_filter(input_buffer, filter, job_data) {
+function* filter_run_generator(_, filter, job_data) {
 	let samples = filter.duration * 44100;
 	let inv_total_work = 1 / samples * filter.channels;
 
@@ -972,10 +960,10 @@ function* run_generator_filter(input_buffer, filter, job_data) {
 		yield i * samples / inv_total_work;
 	}
 
-	return update_filter_cache(filter, copy_audio_buffer_with_channels(buffer, out_channels));
+	return filter_update_cache(filter, audio_buffer_copy_with_channels(buffer, out_channels));
 }
 
-window.run_filter = async function run_filter(input_buffer, filter) {
+window.filter_run = async function filter_run(input_buffer, filter) {
 	return new Promise(resolve => {
 		if (!input_buffer && filter.type != 'generator') {
 			resolve(null);
@@ -997,16 +985,16 @@ window.run_filter = async function run_filter(input_buffer, filter) {
 		}
 
 		if (filter.cache_string && filter.cache_buffer) {
-			if (filter.cache_string === filter_cache_string(filter)) {
+			if (filter.cache_string === filter_get_cache_string(filter)) {
 				resolve(filter.cache_buffer);
 				return;
 			}
 		}
 
-		let run_func = filter.type === "sample" ? run_sample_filter :
-						filter.type === "fft" ? run_fft_filter :
-						filter.type === "generator" ? run_generator_filter :
-						filter.type === "buffer" ? run_buffer_filter : null;
+		let run_func = filter.type === "sample" ? filter_run_sample :
+						filter.type === "fft" ? filter_run_fft :
+						filter.type === "generator" ? filter_run_generator :
+						filter.type === "buffer" ? filter_run_buffer : null;
 
 		let filter_job = job(JOB_FILTER);
 		let gen = run_func(input_buffer, /** @type {any} */(filter), filter_job);
@@ -1027,7 +1015,7 @@ window.run_filter = async function run_filter(input_buffer, filter) {
 
 			if (done) {
 				if (res.value !== JOB_KILLED && res.value !== null) {
-					update_filter_cache(filter, /** @type {AudioBuffer} */(res.value));
+					filter_update_cache(filter, /** @type {AudioBuffer} */(res.value));
 					resolve(/** @type {any} */(res.value));
 				} else {
 					resolve(JOB_KILLED);
@@ -1040,12 +1028,12 @@ window.run_filter = async function run_filter(input_buffer, filter) {
 	});
 }
 
-window.apply_pipeline = async function apply_pipeline() {
+window.filter_apply_pipeline = async function filter_apply_pipeline() {
 	return new Promise(async (resolve) => {
 		let output_buffer = input.buffer;
 
-		for (let filter of pipeline) {
-			let res = await run_filter(output_buffer, filter);
+		for (let filter of filter_pipeline) {
+			let res = await filter_run(output_buffer, filter);
 
 			if (res === JOB_KILLED) {
 				resolve();
@@ -1056,9 +1044,9 @@ window.apply_pipeline = async function apply_pipeline() {
 		}
 
 		output.buffer = output_buffer;
-		set_source(output);
+		audio_set_source(output);
 		render_audio(output);
-		update_data(output);
+		audio_update_data(output);
 
 		resolve();
 	});

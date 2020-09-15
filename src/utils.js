@@ -11,42 +11,6 @@ window.pwd = path.dirname(process.mainModule.filename);
 
 window.STOP_LISTENING = Symbol("Stop listening");
 
-window.open_audio_file = async function (input_el, audio_context) {
-	let file = fs.readFileSync(input_el.value);
-	return audio_context.decodeAudioData(file.buffer);
-}
-
-window.copy_audio_buffer = function copy_audio_buffer(audio_buffer) {
-	let new_buf = new AudioBuffer({
-		numberOfChannels: audio_buffer.numberOfChannels,
-		length: audio_buffer.length,
-		sampleRate: audio_buffer.sampleRate
-	});
-
-	for (let i = 0; i < audio_buffer.numberOfChannels; i++) {
-		let ch = audio_buffer.getChannelData(i);
-		new_buf.copyToChannel(ch, i);
-	}
-
-	return new_buf;
-}
-
-window.copy_audio_buffer_with_channels = function copy_audio_buffer_with_channels(audio_buffer, channels) {
-	let len = channels[0].length;
-
-	let new_buf = new AudioBuffer({
-		numberOfChannels: channels.length,
-		length: len,
-		sampleRate: audio_buffer.sampleRate
-	});
-
-	for (let i = 0; i < channels.length; i++) {
-		new_buf.copyToChannel(channels[i], i);
-	}
-
-	return new_buf;
-}
-
 window.watch_stylesheet = function (full_path, id) {
 	let out = full_path.slice(0, -4) + "css";
 	let sheet = el("style").set_props({'id': id});

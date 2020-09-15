@@ -1,5 +1,6 @@
 <head>
 	<script type="module" src="main.js"></script>
+	<link rel="stylesheet" href="style.css"></link>
 </head>
 
 <body>
@@ -7,9 +8,13 @@
 	<input id="fileOutput" type="file" nwsaveas/>
 
 	<div class="canvas-wrapper">
-		<div class="canvas-buttons">
+		<div class="canvas-buttons-left">
 			<button onclick="fileInput.click()">Load</button>
 			<button id="inputButton">Play</button>
+		</div>
+		<div class="canvas-buttons-right">
+			<button class="render-button" id="inputFFTButton"></button>
+			<button class="render-button" id="inputAMPButton"></button>
 		</div>
 		<canvas id="inputCanvas"></canvas>
 		<div class="sound-data" id="inputData"></div>
@@ -24,9 +29,14 @@
 	</div>
 
 	<div class="canvas-wrapper">
-		<div class="canvas-buttons">
+		<div class="canvas-buttons-left">
 			<button id="fileSave">Save</button>
 			<button id="outputButton">Play</button>
+		</div>
+		<div class="canvas-buttons-right">
+			<div class="flex-space" style="--flex-max: 100"></div>
+			<button class="render-button" id="outputFFTButton"></button>
+			<button class="render-button" id="outputAMPButton"></button>
 		</div>
 		<canvas id="outputCanvas"></canvas>
 		<div class="sound-data" id="outputData"></div>

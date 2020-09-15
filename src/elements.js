@@ -801,8 +801,8 @@ window.filter_bind = function(filter, key, element, /** @type {any} */element_ke
 	let updatesettings = () => {
 		if (filter.settings[key] != element[element_key]) {
 			filter.settings[key] = element[element_key];
-			invalidate_filter_cache(filter);
-			apply_pipeline();
+			filter_invalidate_cache(filter);
+			filter_apply_pipeline();
 		}
 	};
 

@@ -1,20 +1,20 @@
-declare var curve: (formula: string) => (x: number) => number;
+declare var curve: (formula: string) => (x: number, ...args: number[]) => number;
 declare var params_curve: (number_of_params: number, formula: string) => (...p: any[]) => number;
 declare var churn_curve: (formula: string) => (x: number, t: number, p: number, freq: number, period: number, ind: number, len: number, invlen: number, buf: AudioBuffer, ch: Float32Array, chind: number, chnum: number) => number;
 
-declare var update_filter_cache: (filter: Filter<any>, buffer: AudioBuffer) => AudioBuffer;
-declare var filter_cache_string: (filter: Filter<any>) => string;
-declare var invalidate_filter_cache: (filter: Filter<any>) => void;
-declare var create_filter: <T>(filter: Filter<T>) => Filter<T>;
+declare var filter_update_cache: (filter: Filter<any>, buffer: AudioBuffer) => AudioBuffer;
+declare var filter_get_cache_string: (filter: Filter<any>) => string;
+declare var filter_invalidate_cache: (filter: Filter<any>) => void;
+declare var filter_create: <T>(filter: Filter<T>) => Filter<T>;
 declare var filter_container: (filter: Filter<any>, filter_name: string) => HTMLElement;
 
 declare var fft_resolution: (sample_rate: number, fft_len: number) => number;
 declare var fft_freq: (fft_index: number, fft_resolution: number) => number;
-declare var run_filter: (input_buffer: AudioBuffer | null, filter: Filter<any>) => Promise<AudioBuffer | Symbol | null>;
-declare var apply_pipeline: () => void;
+declare var filter_run: (input_buffer: AudioBuffer | null, filter: Filter<any>) => Promise<AudioBuffer | Symbol | null>;
+declare var filter_apply_pipeline: () => void;
 
 declare var filters: Record<string, Filter<any>>;
-declare var pipeline: Filter<any>[];
+declare var filter_pipeline: Filter<any>[];
 
 interface SampleData {
 	time: number;
